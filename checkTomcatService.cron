@@ -1,0 +1,116 @@
+#!/bin/bash
+_date=`date +%Y-%m-%d`
+_tomcatHome=/opt/webserver/tomcat/
+_logPath="__log__/"
+
+# 邮件标题及邮件内容
+_mes="check service Tomcat :"
+
+# 状态信息标记
+_err="not Found."
+_info="Found."
+
+_logFile="check"${_date}
+
+# 
+# export SERVICE_NAME="tomcat-android-ios"
+
+########### function #############
+function __readINI() {
+    INIFILE=$1;    SECTION=$2;     ITEM=$3
+    _readIni=`awk -F '=' '/\['$SECTION'\]/{a=1}a==1&&$1~/'$ITEM'/{print $2;exit}' $INIFILE`
+    echo ${_readIni}
+}
+
+_serviceName=( $( __readINI ${_tomcatHome}.config.ini SERVER_LIST S_LIST ) )
+_tomcatVersion=$( __readINI ${_tomcatHome}.config.ini T_VER T_VERSION )
+_tomcatFilter=$( __readINI ${_tomcatHome}.config.ini FILTER TOMCAT_FILTER )
+_email=$( __readINI ${_tomcatHome}.config.ini MAIL TOMAIL )
+_tomcatLog=$( __readINI ${_tomcatHome}.config.ini TOMCATPATH T_LOGS )
+
+_runUser=$( __readINI ${_tomcatHome}.config.ini USER_INFO T_USER )
+_runGroup=$( __readINI ${_tomcatHome}.config.ini USER_INFO T_GROUP )
+
+_logPath=${_tomcatLog}${_logPath}
+
+function __diglog(){
+    _date_=`date "+%Y%m%d %T"`
+    echo "[${_date_}] ${1}" >> ${2}
+}
+
+function __checkExist()
+{
+    filter_serverName=$1
+    filter_instanceName=$2
+    stand=$3
+     
+    ps_num=`ps -fe |grep ${filter_serverName} |grep ${filter_instanceName} |grep -v grep|wc -l`
+     
+    
+     if (( ${ps_num}!=${stand} ));then
+        # __diglog ${_mes}${_err} ${_logPath}${_logFile}
+         echo 0;
+    else
+         echo 1;
+     fi
+
+}
+
+function __checkDir(){
+    test -d $1 || mkdir $1
+}
+
+function __tomail(){
+    echo "${1}" |mail -s "${2}" ${3}
+}
+
+function __restart(){
+    test `__checkExist "{_tomcatFilter}" "${4}" "1"` -eq 1 || ${1} 
+    kill -9 "${4}"
+    # 下面的chown 可以不要，因我同事总是喜欢root启动tomcat 所以我加了下面这条，防止个别日志无法写入
+    chown -R ${_runUser}.${_runGroup} ${3}
+    sleep 4
+    ${2}
+    sleep 1
+    
+    # $1: 关闭 tomcat shutdown.sh路径 
+    # $2: 启动 tomcat shutdown.sh路径 
+    # $3: tomcat安装目录
+    # $4: 实例名称
+}
+
+# 
+function __serviceInfo(){
+    if(( "$1" == "title" )) ;then
+        _ip=`/sbin/ifconfig eth0|grep "inet addr:"|grep -v "127.0.0.1"|cut -d: -f2|awk '{print $1}'`
+        _name=`hostname`
+        echo "${_name}  ${_ip}"
+    fi
+}
+
+for i in ${_serviceName[@]} ;do
+   # ${i} 服务实例名称，存在于.config.ini中
+  checkCoun=`__checkExist "${_tomcatFilter}" "${i}" "1"`
+  
+  if (( ${checkCoun} == "0" ));then
+  
+      _date=`date "+%Y%m%d %T"`
+      
+      __checkDir ${_logPath} 
+      
+      _startCmd="/usr/bin/sudo -u ${_runUser} -s /bin/bash  ${_tomcatHome}run.sh ${i} start"
+      _shutdownCmd="/usr/bin/sudo -u ${_runUser} -s /bin/bash   ${_tomcatHome}run.sh ${i} stop &&"
+
+      __restart "${_shutdownCmd}"  "${_startCmd}"  "${_tomcatHome}" "${i}"
+  
+      __diglog "${_mes}${_err} - [Instance ${i}]" "${_logPath}${_logFile}"
+      
+      sleep 3
+      
+      test `__checkExist "${_tomcatFilter}" "${i}" "1"` -eq 1 && _status="restart status is 'Ok'" || _status="restart status is 'Error'"
+      
+      __tomail "[${_date}]  ${_mes}${_err} <br> ${_status} <br> Instance name is: ${i}"  "${_mes} ' `__serviceInfo 'title'` '"  "${_email}"
+      
+  fi
+  
+done

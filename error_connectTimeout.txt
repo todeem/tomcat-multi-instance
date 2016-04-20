@@ -1,0 +1,93 @@
+使用 APACHE COMMON DBCP +COMMON POOL+MYSQL连接无效的问题
+
+
+Throwable occurred: org.springframework.transaction.CannotCreateTransactionException: Could not open JDBC Connection for transaction; nested exception is com.mysql.jdbc.exceptions.jdbc4.CommunicationsException: The last packet successfully received from the server was 50,123,505 milliseconds ago.  The last packet sent successfully to the server was 50,123,505 milliseconds ago. is longer than the server configured value of 'wait_timeout'. You should consider either expiring and/or testing connection validity before use in your application, increasing the server configured values for client timeouts, or using the Connector/J connection property 'autoReconnect=true' to avoid this problem.
+
+
+这主要是由两个原因引起来的:
+1.mysql 会自动关闭长时间不用的connection,一个连接如果处于sleep状态达到mysql的参数wait_timeout指定的时间(默认为8小时),就是自动关闭这个连接
+2.common pool中没有指定相应的连接检查参数
+
+
+解决办法:从common pool的配置参数来解决:
+
+ <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+  <property name="driverClassName">
+   <value>${db.driver}</value>
+  </property>
+  <property name="url">
+   <value>${db.url}</value>
+  </property>
+  <property name="username">
+   <value>${db.user}</value>
+  </property>
+  <property name="password">
+   <value>${db.password}</value>
+  </property>
+  <property name="maxActive">
+   <value>100</value>
+  </property>
+  <property name="maxIdle">
+   <value>50</value>
+  </property>
+  <property name="maxWait">
+   <value>10000</value>
+  </property>
+
+  <property name="timeBetweenEvictionRunsMillis">
+   <value>3600000</value><!--1 hours-->
+  </property>
+<!--
+  <property name="minEvictableIdleTimeMillis">
+   <value>20000</value>
+  </property>
+-->
+  
+  <property name="testWhileIdle">
+   <value>true</value>
+  </property>
+  <property name="validationQuery">
+   <value>select 1 from dual</value>
+  </property>
+ </bean>
+使用上述的三个红色的参数,就可以避免这个问题.这三个参数的意义:
+
+timeBetweenEvictionRunsMillis:启动connection校验定时器,定时器运行时间间隔就是timeBetweenEvictionRunsMillis的值.默认为-1,表示不启动定时器,这里设定为1小时,只要小于mysql的wait_timeout就可以了
+
+testWhileIdle: true,表示检查idle的connection,false为不检查
+
+validationQuery:用于检查connection的sql语句.
+
+
+这只是一种方法,另外的几种方法:
+
+timeBetweenEvictionRunsMillis+minEvictableIdleTimeMillis:这种方式不检查Connection的有效性,而是检查连接的空闲时间,大于minEvictableIdleTimeMillis就清除.
+
+  <property name="timeBetweenEvictionRunsMillis">
+   <value>3600000</value><!--1 hours-->
+  </property>
+
+  <property name="minEvictableIdleTimeMillis">
+   <value>120000</value><!--connection的空闲时间大于这个值,就直接被关闭,并从连接池中删除-->
+  </property>
+
+
+如果不喜欢用定时器,也可以配置testOnBorrow+validationQuery参数:每次从连接池取参数都会校验连接的有效性.实际上这种方式性能会比定时器差些.
+  <property name="testOnBorrow">
+   <value>true</value>
+  </property>
+  <property name="validationQuery">
+   <value>select 1 from dual</value>
+  </property>
+
+
+另外,也可以用testOnReturn+validationQuery,不过未必会解决问题:这表示每次使用完连接,归还连接池的时候检查连接的有效性,这有可能导致使用一次无效的连接,最好不要用.
+
+
+上面的几种方法可以合并使用,只是检查的点多了,未必是好事
+
+
+另外,也可以使用Abandoned的那几个参数,来删除连接池中的连接.也能达到效果.我没测试.
+
+
+
