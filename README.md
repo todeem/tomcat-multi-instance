@@ -27,7 +27,7 @@ export CATALINA_HOME=$2
 export JAVA_OPTS=$3
 export SERVICE_NAME=$4
 ```
-*可使用下面的方式直接向 `startup.sh`和`shutdown.sh` 文件内添加
+* 可使用下面的方式直接向 `startup.sh`和`shutdown.sh` 文件内添加
 ```shell
 _appendShell='export JAVA_HOME=/usr/java/latest; export CLASSPATH=.:$JAVA_HOME/jre/lib/rt.jar:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar; export CATALINA_BASE=$1; export CATALINA_HOME=$2;export JAVA_OPTS=$3;export SERVICE_NAME=$4;';
 sed  -i "/\#\!\/bin\/sh/a ${_appendShell}" ${_tomcatPath}bin/startup.sh;
@@ -67,7 +67,7 @@ sed  -i "/\#\!\/bin\/sh/a ${_appendShell}" ${_tomcatPath}bin/shutdown.sh;
 
     
 ## run.sh脚本使用方法：
-**run.sh篇，三种使用方式：**
+**run.sh篇，三种使用方式：**    
 **1）对单个实例进行启动|停止**
 ```shell
     sh run.sh 实例名称 [start|stop]
