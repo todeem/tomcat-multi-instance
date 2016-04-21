@@ -1,10 +1,9 @@
 # Tomcat-multi-instance
-# # TOMCAT 多实例部署 框架及多服务启动脚本与检测服务是否在线脚本（仅仅查看进程是否存在）
+TOMCAT 多实例部署 框架及多服务启动脚本与检测服务是否在线脚本（仅仅查看进程是否存在）
 
 调试可使用 sh -x 参数
-####
-设置步骤
---------------------------------------------
+
+#设置步骤
 1）chmod +x run.sh checkTomcatService.cron
 2) vim .config.ini
 3) vim bin/startup.sh
@@ -15,8 +14,8 @@
 6) sh run.sh xxx start
 7) vim checkTomcatService.cron 并且添加 checkTomcatService.cron 到任务
 8) **** 在实例下面的logs文件夹需要自己指定 ln -s 日志真实存储路径 logs 即可
-####
-具体配置，未按顺序编写：
+
+#具体配置，未按顺序编写：
 --------------------------------------------
 需要想bin下的startup.sh和shutdown.sh脚本增加java环境变量和接收参数的变量（JAVA环境变量请根据各自主机安装情况配置）
 
@@ -33,8 +32,7 @@ sed  -i "/\#\!\/bin\/sh/a ${_appendShell}" ${_tomcatPath}bin/startup.sh
 sed  -i "/\#\!\/bin\/sh/a ${_appendShell}" ${_tomcatPath}bin/shutdown.sh
 
 
-####
-连接池配置可修改实例conf下的：
+#连接池配置可修改实例conf下的：
 --------------------------------------------
 1）context.xml
     <Resource 
@@ -62,8 +60,7 @@ sed  -i "/\#\!\/bin\/sh/a ${_appendShell}" ${_tomcatPath}bin/shutdown.sh
     </resource-ref>
 
     
-####
-脚本使用方法：
+#脚本使用方法：
 --------------------------------------------
 run.sh篇，三种使用方式：
 
@@ -76,8 +73,7 @@ run.sh篇，三种使用方式：
 3）显示当前tomcat实例运行状态：
     sh run.sh
     
-####
-.config.ini 说明（Linux下为隐藏文件）：
+#.config.ini 说明（Linux下为隐藏文件）：
 --------------------------------------------
 [TOMCATPATH]
 ### 查看后请删除掉注释
@@ -112,8 +108,7 @@ TOMCAT_FILTER = ClassLoaderLogManager
 TOMAIL = XXX@XXX.COM XXX@DDD.COM
 
 
-####
-修改checkTomcatService.cron任务脚本
+#修改checkTomcatService.cron任务脚本
 --------------------------------------------
 修改脚本内的tomcat安装目录即可
 赋予可执行权限，并拷贝到/var/spool/cron/下（或自行修改路径）
