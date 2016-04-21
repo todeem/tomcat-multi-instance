@@ -17,7 +17,8 @@
 
 [TOC]
 ## 设置脚本权限
->需要想**bin**下的`startup.sh`和`shutdown.sh`脚本增加**java环境变量**和**接收参数的变量**（JAVA环境变量请根据各自主机安装情况配置）
+>需要想**bin**下的`startup.sh`和`shutdown.sh`脚本增加**java环境变量**和**接收参数的变量**（JAVA环境变量请根据各自主机安装情况配置）    
+
 ```shell
 export JAVA_HOME=/usr/java/latest
 export CLASSPATH=.:$JAVA_HOME/jre/lib/rt.jar:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
