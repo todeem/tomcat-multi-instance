@@ -105,12 +105,12 @@ TOMCAT_FILTER = 任务(crond)脚本使用的过滤条件[例：ClassLoaderLogManager]
 [MAIL]     
 ## 发送邮箱地址，多个请用空格分割     
 TOMAIL = 发送邮箱地址，多个请用空格分割 [例：XXX@XXX.COM XXX@DDD.COM]
-```
 
 ## 修改checkTomcatService.cron任务脚本
 
 修改脚本内的tomcat安装目录即可   
 赋予可执行权限，并拷贝到/var/spool/cron/下（或自行修改路径）    
+
 ```shell
 echo  '*/1 * * * * /bin/bash /var/spool/cron/checkTomcatService.cron > /dev/null 2>&1' >> /var/spool/cron/root && service  crond restart
 ```
