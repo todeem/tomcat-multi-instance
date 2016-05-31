@@ -9,9 +9,9 @@
 cd `dirname $0`;
 ########### function #############
 function __readINI() {
- INIFILE=$1;    SECTION=$2;     ITEM=$3
- _readIni=`awk -F '=' '/\['$SECTION'\]/{a=1}a==1&&$1~/'$ITEM'/{print $2;exit}' $INIFILE`
-echo ${_readIni}
+    INIFILE=$1;    SECTION=$2;     ITEM=$3
+    _readIni=`awk -F '=' '/\['$SECTION'\]/{a=1}a==1&&$1~/'$ITEM'/{print $2;exit}' $INIFILE`
+    echo ${_readIni}
 }
 
 function __permission(){
@@ -23,34 +23,46 @@ function __permission(){
 }
 
 function __runStatus() {
- _num=$1;  _serviceFileName=$2 
- if (( $_num==0 ));then
-  __permission "${_tomcatUser}:${_tomcatGroup}" "${_tomcatDATA}" "${_tomcatHome}/${_serviceFileName}"
-  cd ${_serviceFileName}
-  sh tomcat.sh start > /dev/null 
-  cd -
- elif (( ${_num}==1 ));then
-  cd ${_serviceFileName}
-  sh tomcat.sh stop > /dev/null && rm -fr ./work/*
-  cd -
- else
-  break
- fi
+    _num=$1;  _serviceFileName=$2 
+    if (( $_num==0 ));then
+    __permission "${_tomcatUser}:${_tomcatGroup}" "${_tomcatDATA}" "${_tomcatHome}/${_serviceFileName}"
+    cd ${_serviceFileName}
+    sh tomcat.sh start > /dev/null 
+    cd -
+    elif (( ${_num}==1 ));then
+    cd ${_serviceFileName}
+    sh tomcat.sh stop > /dev/null && rm -fr ./work/*
+    cd -
+    else
+    break
+    fi
 }
 
 function __port(){
-# input 
-# return  port array
-_serviceName="$1/conf/server.xml"
+    # input 
+    # return  port [group]
+    _serviceName="$1/conf/server.xml"
 
-if [[ -e ${_serviceName} ]];then
-echo $(grep -o -P -i 'port=\"(.*)\"\ {0,}protocol=\"HTTP' ${_serviceName} | tr -d "a-zA-Z=\"") 
-else
- break
-fi
-
+    if [[ -e ${_serviceName} ]];then
+    echo $(grep -o -P -i 'Connector {0,}port=\"(.*)\"\ {0,}protocol=\"HTTP' ${_serviceName} | tr -d "a-zA-Z=\"") 
+    else
+    break
+    fi
 }
-#
+
+
+function __appBase(){
+    # $1 _serviceName
+    # return  port [group]
+    _serviceName="$1/conf/server.xml"
+    if [[ -e ${_serviceName} ]];then
+        echo $(grep -o -P -i 'Host {0,}name="([\w-\.]{0,})" {0,}appBase=\"(.*)\"' ${_serviceName} |grep -oP '(appBase=)\S+' |tr = : ) 
+    else
+        break
+    fi
+}
+
+
 
 
 ########### end fun ############
@@ -109,7 +121,7 @@ echo -e "\n--  本地Tomcat启动/关闭情况  --\n"
         _status="\033[3${y}m start \033[0m"   
         arr[$count]=1
    fi
-  echo -e "${count}) - [ ${_status} ] - \033[3${y}m $i \033[0m [tomcat.port: $(__port $i) ]"
+  echo -e "${count}) - [ ${_status} ] - \033[3${y}m $i \033[0m [tomcat.port: $(__port $i) |  $(__appBase $i)]"
   
   ((count=$count+1))
  done
